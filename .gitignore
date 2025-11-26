@@ -11,3 +11,4 @@ credentials
 
 # Ignore specific files
 test_connections.py
+data/
