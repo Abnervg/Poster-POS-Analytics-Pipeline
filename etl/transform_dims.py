@@ -8,6 +8,7 @@ import pandas as pd
 import logging
 from datetime import date
 from etl.s3_client import S3Client
+from datetime import timedelta
 #=============================
 # Logger Configuration
 #=============================
@@ -57,9 +58,9 @@ def transform_single_dimension(name, date_str):
 
 def run_dimension_transform():
     # We assume we are transforming "Today's" snapshot
-    today_str = date.today().strftime('%Y-%m-%d')
-    
-    dimensions = ['products', 'categories', 'spots', 'customers']
+    today = (date.today()-timedelta(days=1))
+    today_str = today.strftime('%Y-%m-%d')
+    dimensions = ['products', 'categories', 'spots', 'employees']
     
     for dim in dimensions:
         transform_single_dimension(dim, today_str)

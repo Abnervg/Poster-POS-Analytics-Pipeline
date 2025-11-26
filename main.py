@@ -39,7 +39,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run ETL pipeline steps.")
     parser.add_argument(
         "--step",
-        choices=["extract_and_load_raw", 'transform', 'extract_dims', 'load_curated' "all"],
+        choices=["extract_and_load_raw", 'extract_dims', 'transform', 'transform_dims',  'load_curated' "all"],
         default="all",
         help="ETL step to run (default: all)",
     )
@@ -63,6 +63,13 @@ def main():
             # Transform step
             transform()
             logger.info("Data transformation completed.")
+        
+        if args.step in ("transform_dims",'all'):
+            logger.info("Transforming dimension data...")
+            # Transform Dimensions step
+            from etl.transform_dims import run_dimension_transform
+            run_dimension_transform()
+            logger.info("Dimension data transformation completed.")
         
         if args.step in ("load_curated",'all'):
             logger.info("Loading curated data...")
