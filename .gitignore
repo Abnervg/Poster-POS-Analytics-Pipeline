@@ -1,2 +1,14 @@
-# Files to ommit
-config/.env
+# Ignore virtual environment
+venv/
+__pycache__/
+
+# Ignore environment variables ##KEEEEYS##
+.env
+credentials
+
+# Ignore OS generated files
+.DS_Store
+
+# Ignore specific files
+test_connections.py
+data/
