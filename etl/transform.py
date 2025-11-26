@@ -103,12 +103,6 @@ def transformations(data):
             df['date_close'] = pd.to_datetime(df['date_close'])
             df['timestamp'] = pd.to_datetime(df['date_close'], unit='ms')
 
-        #Save locally for debugging purposes
-        output_dir = Path('data/transformed/')
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_file = output_dir / 'transformed_data.csv'
-        df.to_csv(output_file, index=False)
-
         return df
 
     except Exception as e:
@@ -127,7 +121,7 @@ def transform():
     date_to_str = date_to.strftime('%Y%m%d')
 
     # Define S3 object key for raw data
-    object_key = f'raw/receipts_{date_from_str}_{date_to_str}.json' 
+    object_key = f'raw/sales/sales_{date_from_str}_{date_to_str}.json' 
 
     # Step 1: Extract raw data from S3
     raw_data = extract_from_s3(object_key)
@@ -143,6 +137,12 @@ def transform():
         logging.info('Transformation resulted in empty DataFrame. Exiting.')
         return
     
-    logging.info('Transformation completed.') 
-    return transformed_df       
+    logging.info('Transformation completed.')
+
+    # Step 3: Save transformed data back to S3 in Parquet format
+    s3 = S3Client()
+    target_key = f'curated/sales/sales_{date_from_str}_{date_to_str}.parquet'
+    s3.upload_parquet(transformed_df, target_key)
+    logging.info(f'Transformed data uploaded to s3://{s3.bucket_name}/{target_key}')
+    return     
     

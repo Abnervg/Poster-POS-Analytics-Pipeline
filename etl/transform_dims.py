@@ -56,7 +56,7 @@ def transform_single_dimension(name, date_str):
     except Exception as e:
         logger.error(f"❌ Transformation failed for {name}: {e}")
 
-def run_dimension_transform():
+def dimension_transform():
     # We assume we are transforming "Today's" snapshot
     today = (date.today()-timedelta(days=1))
     today_str = today.strftime('%Y-%m-%d')
@@ -67,4 +67,4 @@ def run_dimension_transform():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    run_dimension_transform()
+    dimension_transform()

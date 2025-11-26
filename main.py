@@ -1,15 +1,15 @@
-import json
 import logging
 import os
 import argparse
 import dotenv
+from datetime import datetime, timedelta
 #=============================
 #Import ETL modules
 #=============================
 from etl.extract import extraction
-from etl.s3_client import S3Client
 from etl.transform import transform
 from etl.extract_dims import extract_dimensions
+from etl.transform_dims import dimension_transform
 
 #=============================
 # Configure Logging
@@ -22,62 +22,73 @@ logger = logging.getLogger(__name__)
 env_path = os.getenv("ENV_PATH", "config/.env")
 dotenv.load_dotenv(env_path)
 
-# Main orchestration function
-def main():
-    # Load config required variables
-    config = {
-        "POS_API_TOKEN": os.getenv("POS_API_TOKEN")
-    }
+def daterange(start_date, end_date):
+    """Helper to loop through dates from start to end."""
+    for n in range(int((end_date - start_date).days) + 1):
+        yield start_date + timedelta(n)
 
-    # Make sure all required environment variables are set
+def main():
+    # Load config 
+    config = { "POS_API_TOKEN": os.getenv("POS_API_TOKEN") }
     for key, value in config.items():
         if not value:
             raise ValueError(f"Missing environment variable: {key}")
 
     logger.info("Starting ETL pipeline...")
 
+    # --- CLI ARGUMENTS ---
     parser = argparse.ArgumentParser(description="Run ETL pipeline steps.")
+    
+    # 1. Step Control
     parser.add_argument(
         "--step",
-        choices=["extract_and_load_raw", 'extract_dims', 'transform', 'transform_dims',  'load_curated' "all"],
+        choices=["extract_sales", 'extract_dims', 'transform_sales', 'transform_dims', "all"],
         default="all",
         help="ETL step to run (default: all)",
     )
+    
+    # 2. Date Control (New!)
+    parser.add_argument("--start_date", type=str, help="YYYY-MM-DD", required=False)
+    parser.add_argument("--end_date", type=str, help="YYYY-MM-DD", required=False)
+
     args = parser.parse_args()
 
+    # --- DETERMINE DATE RANGE ---
+    if args.start_date and args.end_date:
+        # Backfill Mode
+        start_dt = datetime.strptime(args.start_date, "%Y-%m-%d").date()
+        end_dt = datetime.strptime(args.end_date, "%Y-%m-%d").date()
+        logger.info(f"Mode: BACKFILL ({start_dt} to {end_dt})")
+    else:
+        # Incremental Mode (Yesterday)
+        end_dt = datetime.now().date()
+        start_dt = end_dt - timedelta(days=1)
+        logger.info(f"Mode: DAILY INCREMENTAL ({start_dt})")
+
     try:
-        if args.step in ("extract_and_load_raw", "all"):
-            logger.info("Extracting data...")
-            # Extract and Load Raw Data into stage step
-            extraction()
-            logger.info("Data extraction and raw loading completed.")
-
+        # --- DIMENSIONS (Snapshot, so no date loop needed) ---
         if args.step in ("extract_dims", "all"):
-            logger.info("Extracting dimension data...")
-            # Extract Dimensions step
+            logger.info("--- Step: Extract Dimensions ---")
             extract_dimensions()
-            logger.info("Dimension data loading completed.")
 
-        if args.step in ("transform",'all'):
-            logger.info("Transforming data...")
-            # Transform step
-            transform()
-            logger.info("Data transformation completed.")
-        
-        if args.step in ("transform_dims",'all'):
-            logger.info("Transforming dimension data...")
-            # Transform Dimensions step
-            from etl.transform_dims import run_dimension_transform
-            run_dimension_transform()
-            logger.info("Dimension data transformation completed.")
-        
-        if args.step in ("load_curated",'all'):
-            logger.info("Loading curated data...")
-            # Load curated step
-            # Call your load curated function here
-            logger.info("Curated data loading completed.")
+        if args.step in ("transform_dims", 'all'):
+             logger.info("--- Step: Transform Dimensions ---")
+             dimension_transform()
 
+        # --- SALES (Transactional, needs Date Loop) ---
+        # We loop through every day to avoid API timeouts and huge file sizes
+        for single_date in daterange(start_dt, end_dt):
+            current_date_str = single_date.strftime('%Y-%m-%d')
+            logger.info(f">>> Processing Date: {current_date_str}")
 
+            if args.step in ("extract_sales", "all"):
+                # You must update your extraction() function to accept these args!
+                extraction(current_date_str, current_date_str)
+
+            if args.step in ("transform_sales", 'all'):
+                # You must update your transform() function to accept these args!
+                transform(current_date_str, current_date_str)
+                
     except Exception as e:
         logger.error(f"ELT pipeline failed: {e}")
 

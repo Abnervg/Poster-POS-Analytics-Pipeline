@@ -103,7 +103,7 @@ def extraction():
     #Step 2: Load receipts to S3 raw layer
     s3 = S3Client()
 
-    key_name = f'raw/receipts_{date_from_str}_{date_to_str}.json'
+    key_name = f'raw/sales/sales_{date_from_str}_{date_to_str}.json'
 
     s3.upload_json(transactions, key_name)
 
