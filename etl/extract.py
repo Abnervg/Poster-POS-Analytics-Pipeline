@@ -5,9 +5,7 @@ import logging
 from datetime import date, timedelta
 from dotenv import load_dotenv
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from etl.load import save_raw_to_s3
-from pathlib import Path
+from etl.s3_client import S3Client
 
 #Load secret env vars
 load_dotenv()
@@ -56,11 +54,12 @@ def get_transactions(date_from,date_to):
         'token': POSTER_TOKEN,
         'date_from': date_from,
         'date_to': date_to,
-        'include_receipts': 'true',
-        'include_delivery': 'true'
+        'include_products': 'true',
+        'include_delivery': 'true',
+        'type': 'spots'
     }
 
-    logging.info('Fetching transactions from Poster API...')
+    logging.info('Fetching full sales list from Poster API within date range %s to %s', date_from, date_to)
 
     try:
         response = requests.get(url, params=params)
@@ -89,29 +88,26 @@ def get_transactions(date_from,date_to):
 
 def extraction():
     # Example date range: last 3 days
-    date_to = date.today() - timedelta(days=1)
-    date_from = date_to - timedelta(days=2)
+    date_to = date.today()
+    date_from = date_to - timedelta(days=3)
     date_from_str = date_from.strftime('%Y%m%d')
     date_to_str = date_to.strftime('%Y%m%d')
 
-    # Step 1: Fetch transaction IDs
+    # Step 1: Fetch transactions
     transactions = get_transactions(date_from_str, date_to_str)
 
     if not transactions:
         logging.info('No transaction IDs to process. Exiting.')
         return
 
-    #Save receipts data locally (optional)
-    #output_dir = DATA_RAW_PATH
-    #output_dir.mkdir(parents=True, exist_ok=True)
-    #output_file = output_dir / f'receipts_from_{date_from_str}_to_{date_to_str}.json'
-    #with open(output_file, 'w') as f:
-    #    json.dump(receipts, f, indent=4)
+    #Step 2: Load receipts to S3 raw layer
+    s3 = S3Client()
 
-    # Load receipts to S3
-    save_raw_to_s3(transactions, date_from_str, date_to_str) 
+    key_name = f'raw/receipts_{date_from_str}_{date_to_str}.json'
 
-    logging.info(f'Receipt details saved to s3 raw data.')
+    s3.upload_json(transactions, key_name)
+
+    logging.info(f'Extraction and loading to S3 completed for date range {date_from_str} to {date_to_str}.')
 
 
 
