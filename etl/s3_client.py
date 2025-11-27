@@ -67,8 +67,9 @@ class S3Client:
             data = json.loads(content)
             logger.info(f'Successfully read data from s3://{self.bucket_name}/{object_key}')
             return data
-        except Exception as e:
-            logger.error(f'Error reading data from S3: {e}')
+        
+        except:
+            logger.info(f'No data found at s3 for key {object_key}')
             return None
     
     def upload_parquet(self, df, object_key):

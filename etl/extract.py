@@ -112,9 +112,9 @@ def extraction(date_from, date_to, session=None):
     s3.upload_json(transactions, key_name)
 
     if date_from == date_to:
-        logging.info(f'Extraction and loading to S3 completed for date {date_from}.')
+        logging.info(f'Success!✅ Extraction and loading to S3 completed for date {date_from}.')
     else:
-        logging.info(f'Extraction and loading to S3 completed for date {date_from} to {date_to}.')
+        logging.info(f'✅ Extraction and loading to S3 completed for date {date_from} to {date_to}.')
 
 
 

@@ -7,12 +7,8 @@
 #=============================
 import logging
 from dotenv import load_dotenv
-from pathlib import Path
 import pandas as pd
 from etl.s3_client import S3Client
-from datetime import date, timedelta
-from pathlib import Path
-import json
 
 #=============================
 # Load secret env vars
@@ -35,8 +31,13 @@ def extract_from_s3(object_key):
     """
     s3 = S3Client()
     try:
-        data = s3.read_json(object_key)
-        logging.info(f'Successfully extracted data from s3://{s3.bucket_name}/{object_key}')
+        data = s3.read_json(object_key)      
+        if data is None:
+            date = object_key.split('_')[-1].split('.')[0]
+            logging.info(f'No data found for date {date}')
+            return None
+        else:
+            logging.info(f'✅Successfully extracted data from s3 key: {object_key}')
 
         #Validate data structure
         if 'response' in data and isinstance(data['response'], list):
@@ -45,16 +46,15 @@ def extract_from_s3(object_key):
             logging.info(f'Fetched {len(transaction_ids)} transaction IDs.')
             return data
         else:
-            logging.warning('No transaction headers found in the response.')
-            return []
-        
-        
+            logging.warning('❌FATAL! No transaction headers found in the response.❌')
+            logging.warning('❌DATA STRUCTURED COMPROMISED❌')
+            return None
 
     except Exception as e:
-        logging.error(f'Error extracting data from S3: {e}')
+        logging.error(f'❌Error extracting data from S3: {e}')
         return None
 
-def transformations(data):
+def transformations(data): 
     """
     Flattens the transactions data structure and cleans data types.
 
@@ -106,7 +106,7 @@ def transformations(data):
         return df
 
     except Exception as e:
-        logging.error(f'Error during transformation: {e}')
+        logging.error(f'❌Error during transformation: {e}')
         return []
     
 #=============================
@@ -116,13 +116,13 @@ def transformations(data):
 def transform(date_from, date_to):
 
     # Define S3 object key for raw data
-    object_key = f'raw/sales/sales_{date_from}_{date_to}.json' 
+    object_key = f'raw/sales/sales_{date_from}.json' 
 
     # Step 1: Extract raw data from S3
     raw_data = extract_from_s3(object_key)
 
     if not raw_data:
-        logging.info('No raw data to transform. Exiting.')
+        logging.info('No raw data to transform. Moving to next record...')
         return
 
     # Step 2: Transform data
@@ -142,6 +142,6 @@ def transform(date_from, date_to):
     else:
         target_key = f'curated/sales/sales_{date_from}_{date_to}.parquet'
     s3.upload_parquet(transformed_df, target_key)
-    logging.info(f'Transformed data uploaded to s3://{s3.bucket_name}/{target_key}')
+    logging.info(f'Success!✅Transformed data uploaded to s3 with key:{target_key}')
     return     
     

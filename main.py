@@ -88,6 +88,8 @@ def main():
 
                 if args.step in ("transform_sales", 'all'):
                     transform(current_date_str, current_date_str)
+
+        logger.info("✅✅✅ ELT pipeline completed successfully. ✅✅✅")
                 
     except Exception as e:
         logger.error(f"ELT pipeline failed: {e}")
