@@ -9,7 +9,7 @@ import logging
 from dotenv import load_dotenv
 import pandas as pd
 from etl.s3_client import S3Client
-
+from datetime import datetime
 #=============================
 # Load secret env vars
 #=============================
@@ -115,7 +115,13 @@ def transformations(data):
 
 def transform(date_from, date_to):
 
-    # Define S3 object key for raw data
+    #Parse date_from to get year, month, day
+    dt = datetime.strptime(date_from, '%Y-%m-%d')
+    year = dt.year()
+    month = dt.month()
+    day = dt.day()
+
+    #Object key for raw data extraction
     object_key = f'raw/sales/sales_{date_from}.json' 
 
     # Step 1: Extract raw data from S3
@@ -138,7 +144,7 @@ def transform(date_from, date_to):
     s3 = S3Client()
 
     if date_from == date_to:
-        target_key = f'curated/sales/sales_{date_from}.parquet'
+        target_key = f'curated/sales/year={year}/month={month}/day={day}/sales_{date_from}.parquet'
     else:
         target_key = f'curated/sales/sales_{date_from}_{date_to}.parquet'
     s3.upload_parquet(transformed_df, target_key)
