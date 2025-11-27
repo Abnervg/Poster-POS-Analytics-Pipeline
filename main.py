@@ -43,7 +43,7 @@ def main():
     # 1. Step Control
     parser.add_argument(
         "--step",
-        choices=["extract_sales", 'extract_dims', 'transform_sales', 'transform_dims', "all"],
+        choices=["extract_sales", 'extract_dims', 'transform_sales', 'transform_dims','fact_el', "all"],
         default="all",
         help="ETL step to run (default: all)",
     )
@@ -83,10 +83,10 @@ def main():
                 current_date_str = single_date.strftime('%Y-%m-%d')
                 logger.info(f">>> Processing Date: {current_date_str}")
 
-                if args.step in ("extract_sales", "all"):
+                if args.step in ("extract_sales", "fact_el","all"):
                     extraction(current_date_str, current_date_str, session=api_session)
 
-                if args.step in ("transform_sales", 'all'):
+                if args.step in ("transform_sales", "fact_el",'all'):
                     transform(current_date_str, current_date_str)
 
         logger.info("✅✅✅ ELT pipeline completed successfully. ✅✅✅")

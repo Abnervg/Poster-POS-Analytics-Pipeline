@@ -77,7 +77,7 @@ def transformations(data):
 
         if not clean_data:
             logging.info('No transactions with products found for transformation.')
-            return
+            return None
 
         # Normalize JSON data to flatten nested structures
         df = pd.json_normalize(clean_data, record_path=['products'], meta=[
@@ -107,7 +107,7 @@ def transformations(data):
 
     except Exception as e:
         logging.error(f'❌Error during transformation: {e}')
-        return []
+        return None
     
 #=============================
 # Main transform function
@@ -134,7 +134,7 @@ def transform(date_from, date_to):
     # Step 2: Transform data
     transformed_df = transformations(raw_data)
 
-    if transformed_df.empty:
+    if transformed_df is None or transformed_df.empty:
         logging.info('Transformation resulted in empty DataFrame. Exiting.')
         return
     
