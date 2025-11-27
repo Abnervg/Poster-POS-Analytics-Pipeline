@@ -117,9 +117,9 @@ def transform(date_from, date_to):
 
     #Parse date_from to get year, month, day
     dt = datetime.strptime(date_from, '%Y-%m-%d')
-    year = dt.year()
-    month = dt.month()
-    day = dt.day()
+    year = dt.year
+    month = dt.month
+    day = dt.day
 
     #Object key for raw data extraction
     object_key = f'raw/sales/sales_{date_from}.json' 
