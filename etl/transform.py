@@ -113,15 +113,10 @@ def transformations(data):
 # Main transform function
 #=============================
 
-def transform():
-    # Example date range: last 3 days
-    date_to = date.today()
-    date_from = date_to - timedelta(days=3)
-    date_from_str = date_from.strftime('%Y%m%d')
-    date_to_str = date_to.strftime('%Y%m%d')
+def transform(date_from, date_to):
 
     # Define S3 object key for raw data
-    object_key = f'raw/sales/sales_{date_from_str}_{date_to_str}.json' 
+    object_key = f'raw/sales/sales_{date_from}_{date_to}.json' 
 
     # Step 1: Extract raw data from S3
     raw_data = extract_from_s3(object_key)
@@ -141,7 +136,11 @@ def transform():
 
     # Step 3: Save transformed data back to S3 in Parquet format
     s3 = S3Client()
-    target_key = f'curated/sales/sales_{date_from_str}_{date_to_str}.parquet'
+
+    if date_from == date_to:
+        target_key = f'curated/sales/sales_{date_from}.parquet'
+    else:
+        target_key = f'curated/sales/sales_{date_from}_{date_to}.parquet'
     s3.upload_parquet(transformed_df, target_key)
     logging.info(f'Transformed data uploaded to s3://{s3.bucket_name}/{target_key}')
     return     

@@ -58,7 +58,9 @@ def transform_single_dimension(name, date_str):
 
 def dimension_transform():
     # We assume we are transforming "Today's" snapshot
-    today = (date.today()-timedelta(days=1))
+    
+    today = date.today()
+    logger.info(f"Todays snapshot looks for {today} files...")
     today_str = today.strftime('%Y-%m-%d')
     dimensions = ['products', 'categories', 'spots', 'employees']
     

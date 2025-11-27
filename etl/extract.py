@@ -1,8 +1,6 @@
 import requests
 import os
-import json
 import logging
-from datetime import date, timedelta
 from dotenv import load_dotenv
 from pathlib import Path
 from etl.s3_client import S3Client
@@ -40,7 +38,7 @@ MAX_PARALLEL_REQUESTS = 5
 # =============================
 
 #Step 1: Fetch list of transaction headers to get the 'transaction_ids' for every sale.
-def get_transactions(date_from,date_to):
+def get_transactions(date_from,date_to, session=None):
 
     """
     Fetches transaction IDs from the Poster API for a specific date range.
@@ -59,18 +57,25 @@ def get_transactions(date_from,date_to):
         'type': 'spots'
     }
 
-    logging.info('Fetching full sales list from Poster API within date range %s to %s', date_from, date_to)
+    if date_from == date_to:
+        logging.info('Fetching full sales list from Poster API for date %s', date_from)
+    else:
+        logging.info('Fetching full sales list from Poster API within date range %s to %s', date_from, date_to)
 
     try:
-        response = requests.get(url, params=params)
+        requester = session if session else requests
+        response = requester.get(url, params=params)
         response.raise_for_status()  # Check for HTTP errors (like 4xx or 5xx)
         data = response.json()
 
         if 'response' in data and isinstance(data['response'], list):
             transaction_headers = data['response']
             transaction_ids = [header['transaction_id'] for header in transaction_headers]
-            logging.info(f'Fetched {len(transaction_ids)} transaction IDs.')
-            return data
+            if len(data['response']) == 0:
+                logging.info(f'No transactions found for {date_from}.')
+            else:
+                logging.info(f'Fetched {len(transaction_ids)} transaction IDs.')
+                return data
         else:
             logging.warning('No transaction headers found in the response.')
             return []
@@ -86,15 +91,10 @@ def get_transactions(date_from,date_to):
 # their details
 #=============================
 
-def extraction():
-    # Example date range: last 3 days
-    date_to = date.today()
-    date_from = date_to - timedelta(days=3)
-    date_from_str = date_from.strftime('%Y%m%d')
-    date_to_str = date_to.strftime('%Y%m%d')
+def extraction(date_from, date_to, session=None):
 
     # Step 1: Fetch transactions
-    transactions = get_transactions(date_from_str, date_to_str)
+    transactions = get_transactions(date_from, date_to, session)
 
     if not transactions:
         logging.info('No transaction IDs to process. Exiting.')
@@ -103,11 +103,18 @@ def extraction():
     #Step 2: Load receipts to S3 raw layer
     s3 = S3Client()
 
-    key_name = f'raw/sales/sales_{date_from_str}_{date_to_str}.json'
+    #If date_from and date_to are the same, we are processing a single day
+    if date_from == date_to:
+        key_name = f'raw/sales/sales_{date_from}.json'
+    else:
+        key_name = f'raw/sales/sales_{date_from}_{date_to}.json'
 
     s3.upload_json(transactions, key_name)
 
-    logging.info(f'Extraction and loading to S3 completed for date range {date_from_str} to {date_to_str}.')
+    if date_from == date_to:
+        logging.info(f'Extraction and loading to S3 completed for date {date_from}.')
+    else:
+        logging.info(f'Extraction and loading to S3 completed for date {date_from} to {date_to}.')
 
 
 

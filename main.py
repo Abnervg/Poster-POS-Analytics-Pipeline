@@ -3,6 +3,7 @@ import os
 import argparse
 import dotenv
 from datetime import datetime, timedelta
+import requests
 #=============================
 #Import ETL modules
 #=============================
@@ -47,7 +48,7 @@ def main():
         help="ETL step to run (default: all)",
     )
     
-    # 2. Date Control (New!)
+    # 2. Date Control
     parser.add_argument("--start_date", type=str, help="YYYY-MM-DD", required=False)
     parser.add_argument("--end_date", type=str, help="YYYY-MM-DD", required=False)
 
@@ -77,17 +78,16 @@ def main():
 
         # --- SALES (Transactional, needs Date Loop) ---
         # We loop through every day to avoid API timeouts and huge file sizes
-        for single_date in daterange(start_dt, end_dt):
-            current_date_str = single_date.strftime('%Y-%m-%d')
-            logger.info(f">>> Processing Date: {current_date_str}")
+        with requests.Session() as api_session:
+            for single_date in daterange(start_dt, end_dt):
+                current_date_str = single_date.strftime('%Y-%m-%d')
+                logger.info(f">>> Processing Date: {current_date_str}")
 
-            if args.step in ("extract_sales", "all"):
-                # You must update your extraction() function to accept these args!
-                extraction(current_date_str, current_date_str)
+                if args.step in ("extract_sales", "all"):
+                    extraction(current_date_str, current_date_str, session=api_session)
 
-            if args.step in ("transform_sales", 'all'):
-                # You must update your transform() function to accept these args!
-                transform(current_date_str, current_date_str)
+                if args.step in ("transform_sales", 'all'):
+                    transform(current_date_str, current_date_str)
                 
     except Exception as e:
         logger.error(f"ELT pipeline failed: {e}")
