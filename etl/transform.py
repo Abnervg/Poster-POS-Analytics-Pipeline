@@ -80,28 +80,67 @@ def transformations(data):
             return None
 
         # Normalize JSON data to flatten nested structures
-        df = pd.json_normalize(clean_data, record_path=['products'], meta=[
+        df = pd.json_normalize(
+        clean_data, 
+        record_path=['products'], 
+        meta=[
+            # --- IDENTIFIERS ---
             'transaction_id',
-            'date_close',
             'spot_id',
             'table_name',
-            'payed_sum'
+            'user_id',          # Waiter
+            'client_id',        # Customer (CRM)
+            
+            # --- TIME ---
+            'date_start',       # Table Open Time
+            'date_close',       # Payment Time
+            
+            # --- FINANCIALS (RECEIPT LEVEL) ---
+            'payed_sum',        # Total Bill
+            'pay_type',         # Cash/Card/etc
+            'discount',         # Leakage
+            'bonus',            # Loyalty Points Used
+            'tip_sum',          # Staff Tips
+            'tax_sum',          # Tax (VAT)
+            
+            # --- OPERATIONS ---
+            'guests_count',     # Capacity
+            'service_mode',     # 1=Dine-in, 2=Takeaway, etc.
+            'status'            # 2=Closed, 3=Deleted
         ],
         meta_prefix='receipt_',
         errors='ignore'
-        )
+    )
 
-        #Data type conversions
-        #Convert string to numbers
-        numeric_fields = ['product_price', 'num', 'product_profit', 'payed_sum']
+        # --- DATA TYPE CLEANING ---
+    
+        # 1. Numeric Conversion
+        # We include product_cost here so it becomes a number (0.00), not a string
+        numeric_fields = [
+            # Product Level
+            'product_price', 'num', 'product_profit', 
+            'product_cost', 'product_cost_netto', # <--- FUTURE PROOFING
+            
+            # Receipt Level
+            'receipt_payed_sum', 'receipt_discount', 'receipt_tip_sum', 
+            'receipt_guests_count', 'receipt_tax_sum', 'receipt_bonus'
+        ]
+        
         for col in numeric_fields:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-        
-        #Convert Unix timestamp to readable date (Poster uses miliseconds strings)
-        if 'date_close' in df.columns:
-            df['date_close'] = pd.to_datetime(df['date_close'])
-            df['timestamp'] = pd.to_datetime(df['date_close'], unit='ms')
+
+        # 2. ID Columns (Ensure they stay strings to avoid ".0")
+        id_cols = ['receipt_transaction_id', 'receipt_user_id', 'receipt_client_id', 'modification_id', 'product_id']
+        for col in id_cols:
+            if col in df.columns:
+                df[col] = df[col].astype(str).replace('nan', '0')
+
+        # 3. Timestamp Conversion
+        time_cols = ['receipt_date_close', 'receipt_date_start']
+        for col in time_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
 
         return df
 
