@@ -27,7 +27,11 @@ def transform_single_dimension(name, date_str):
     
     # 1. Define Paths
     raw_key = f"raw/dimensions/{name}/{name}_dim_{date_str}.json"
-    target_key = f"curated/dimensions/{name}/{name}_dim_{date_str}.parquet"
+    # OLD
+    # target_key = f"curated/dimensions/{name}/{name}_dim_{date_str}.parquet"
+    
+    # NEW (Hive-Style Partitioning)
+    target_key = f"curated/dimensions/{name}/dt={date_str}/{name}.parquet"
     
     # 2. Read Raw Data
     data = s3.read_json(raw_key)
@@ -58,7 +62,7 @@ def transform_single_dimension(name, date_str):
 
 def dimension_transform():
     # We assume we are transforming "Today's" snapshot
-    
+
     today = date.today()
     logger.info(f"Todays snapshot looks for {today} files...")
     today_str = today.strftime('%Y-%m-%d')
@@ -66,7 +70,6 @@ def dimension_transform():
     
     for dim in dimensions:
         transform_single_dimension(dim, today_str)
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     dimension_transform()

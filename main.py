@@ -43,7 +43,7 @@ def main():
     # 1. Step Control
     parser.add_argument(
         "--step",
-        choices=["extract_sales", 'extract_dims', 'transform_sales', 'transform_dims','fact_el', "all"],
+        choices=["extract_sales", 'extract_dims', 'transform_sales', 'transform_dims','fact_el', 'dim_el', "all"],
         default="all",
         help="ETL step to run (default: all)",
     )
@@ -68,11 +68,11 @@ def main():
 
     try:
         # --- DIMENSIONS (Snapshot, so no date loop needed) ---
-        if args.step in ("extract_dims", "all"):
+        if args.step in ("extract_dims","dim_el", "all"):
             logger.info("--- Step: Extract Dimensions ---")
             extract_dimensions()
 
-        if args.step in ("transform_dims", 'all'):
+        if args.step in ("transform_dims","dim_el", 'all'):
              logger.info("--- Step: Transform Dimensions ---")
              dimension_transform()
 
