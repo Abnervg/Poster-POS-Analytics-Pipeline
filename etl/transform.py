@@ -3,20 +3,21 @@
 #=============================
 
 #=============================
-#Imports
+# Imports
 #=============================
 import logging
 from dotenv import load_dotenv
 import pandas as pd
 from etl.s3_client import S3Client
 from datetime import datetime
+
 #=============================
 # Load secret env vars
 #=============================
 load_dotenv()
 
 #=============================
-#Transformations
+# Transformations
 #=============================
 
 def extract_from_s3(object_key):
@@ -134,14 +135,13 @@ def transformations(data):
         id_cols = ['receipt_transaction_id', 'receipt_user_id', 'receipt_client_id', 'modification_id', 'product_id']
         for col in id_cols:
             if col in df.columns:
-                df[col] = df[col].astype(str).replace('nan', '0')
+                df[col] = df[col].astype(str).replace('nan', '0').replace('None', '0')
 
         # 3. Timestamp Conversion
         time_cols = ['receipt_date_close', 'receipt_date_start']
         for col in time_cols:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
-
         return df
 
     except Exception as e:
