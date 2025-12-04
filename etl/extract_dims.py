@@ -73,7 +73,7 @@ def extract_dimensions():
         if data:
             s3_key = f"raw/dimensions/{name}/{name}_dim_{today_str}.json"
             s3.upload_json(data, s3_key)
-            logger.info(f"Uploaded {name} dimension data to S3 at {s3_key}")
+            logger.info(f"Success!✅ Uploaded {name} dimension data to S3 at {s3_key}")
         else:
             logger.warning(f"No data fetched for {name} dimension")
 

@@ -3,3 +3,5 @@ pandas
 requests
 awswrangler
 python-dotenv
+matplotlib
+fpdf

@@ -4,7 +4,7 @@ __pycache__/
 
 # Ignore environment variables ##KEEEEYS##
 .env
-credentials
+credentials/
 
 # Ignore OS generated files
 .DS_Store
@@ -12,3 +12,4 @@ credentials
 # Ignore specific files
 test_connections.py
 data/
+diagrams/
