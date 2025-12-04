@@ -129,7 +129,7 @@ def transformations(data):
         
         for col in numeric_fields:
             if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(float)
 
         # 2. ID Columns (Ensure they stay strings to avoid ".0")
         id_cols = ['receipt_transaction_id', 'receipt_user_id', 'receipt_client_id', 'modification_id', 'product_id']
